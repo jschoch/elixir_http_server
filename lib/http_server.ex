@@ -28,8 +28,8 @@ defmodule HttpServer do
     end
   end
   
-  # Wait for requests and pass them to the handler
-  defp listen_loop(caller, listen_socket) do
+  @doc "Wait for requests and pass them to the handler"
+  def listen_loop(caller, listen_socket) do
     # Wait for the next request
     { :ok, socket } = TCP.accept(listen_socket)
     
@@ -43,8 +43,8 @@ defmodule HttpServer do
     listen_loop(caller, listen_socket)
   end
   
-  # Get information about the request and send back a response
-  defp handle_request(caller, socket) do
+  @doc "Get information about the request and send back a response"
+  def handle_request(caller, socket) do
     request = get_request_data(socket)
     data = caller.route(request.method, request.path, request)
     response = """
@@ -59,12 +59,12 @@ defmodule HttpServer do
     TCP.close(socket)
   end
   
-  # Create a `Request` record from the socket's recieved data
-  defp get_request_data(socket) do
+  @doc "Create a `Request` record from the socket's recieved data"
+  def get_request_data(socket) do
     get_request_data(socket, Request.new())
   end
   
-  defp get_request_data(socket, data) do
+  def get_request_data(socket, data) do
     # Recieve the data
     case TCP.recv(socket, 0) do
       # Inital request data
@@ -114,9 +114,9 @@ defmodule HttpServer do
   end
   
   defmacro __using__(_opts) do
-    root_val = Keyword.get(opts, :root, ".")
-    
     quote do
+      import HttpServer, only: [all: 1, all: 2, get: 2, post: 2]
+  
       def start do
         start(8080)
       end

@@ -6,4 +6,9 @@ defmodule HttpServerTest do
   test "the truth" do
     assert true
   end
+  
+  test "all macro works" do
+    all do: "Testing"
+    assert route(:method, "path", nil) == "Testing"
+  end
 end
