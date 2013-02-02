@@ -76,9 +76,7 @@ defmodule HttpServer do
         data = data.uri uri
         data = data.method method
         data = data.path String.split(String.lstrip(uri_elements.path, ?/), "/")
-        unless nil? uri_elements.query do
-          data = data.params URI.decode_query uri_elements.query
-        end
+        data = data.params URI.decode_query(uri_elements.query || "")
         
         # Get the rest of the data
         get_request_data(socket, data)
