@@ -1,6 +1,10 @@
 defmodule WebApp do
   use HttpServer, root: "public"
   
+  get ["favicon.ico"] do
+    { :error, 404 }
+  end
+  
   get ["test", id] do
     html = """
     <p>Test. ID: #{id}</p>
