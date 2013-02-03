@@ -50,7 +50,7 @@ defmodule HttpServer do
     data = caller.route(request.method, request.path, request)
     response = case data do
       { :ok, html } -> generate_response html
-      { :ok, data, type } -> generate_file_response data, type
+      { :ok, data, type } -> generate_response data, type
       e -> generate_error e
     end
     TCP.send(socket, response)
@@ -116,22 +116,15 @@ defmodule HttpServer do
   
   @doc "Generate the correct headers for a html response"
   def generate_response(html) do
-    """
-    HTTP/1.1 200 OK
-    Host: localhost
-    Content-Type: text/html
-    Content-Length: #{byte_size html}
-    
-    #{html}
-    """
+    generate_response(html, "text/html")
   end
   
-  @doc "Generate the correct headers for file response (with mime type)"
-  def generate_file_response(data, mime_type) when is_binary(data) and is_binary(mime_type) do
+  @doc "Generate the correct headers for sepecified mime type"
+  def generate_response(data, mime_type) when is_binary(mime_type) do
     """
     HTTP/1.1 200 OK
     Host: localhost
-    Content-Type: image/png
+    Content-Type: #{mime_type}
     Content-Length: #{byte_size data}
     
     #{data}
