@@ -16,7 +16,19 @@ defmodule WebApp do
   all do
     html = """
     <h1>Hello World!</h1>
-    <pre>#{inspect request}</pre>
+    <dl>
+      <dt>URI</dt>
+      <dd>#{request.uri}</dd>
+      
+      <dt>Method</dt>
+      <dd>#{request.method}</dd>
+      
+      <dt>Headers</dt>
+      <dd>#{inspect request.headers}</dd>
+      
+      <dt>Parameters</dt>
+      <dd>#{inspect request.params}</dd>
+    </dl>
     """
     
     { :ok, html }
