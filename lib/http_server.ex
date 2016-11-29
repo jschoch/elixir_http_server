@@ -6,12 +6,6 @@ defmodule HttpServer do
   
   alias :gen_tcp, as: TCP
   
-  defrecord Request, uri: nil,
-                     method: nil,
-                     path: nil,
-                     headers: HashDict.new,
-                     params: nil,
-                     body: nil
   
   @doc "Start the web server with the default port (8080)."
   def start(caller) do
@@ -45,174 +39,28 @@ defmodule HttpServer do
   
   @doc "Get information about the request and send back a response"
   def handle_request(caller, socket) do
-    request = get_request_data(socket)
-    IO.puts "#{atom_to_binary(request.method)} #{request.uri}" 
-    data = caller.route(request.method, request.path, request)
-    response = case data do
-      { :ok, html } -> generate_response html
-      { :ok, data, type } -> generate_response data, type
-      e -> generate_error e
-    end
+    #request = get_request_data(socket)
+    #IO.puts "#{atom_to_binary(request.method)} #{request.uri}" 
+    IO.puts "hr"
+    #data = caller.route(request.method, request.path, request)
+    #response = case data do
+      #{ :ok, html } -> generate_response html
+      #{ :ok, data, type } -> generate_response data, type
+      #e -> generate_error e
+    #end
+    data = "<html><body>Hello World</html></body>"
+    response = """
+          HTTP/1.1 200 OK
+          Host: localhost
+          Date: Fri, 31 Dec 1999 23:59:59 GMT
+          Content-Type: text/html
+          Content-Length: #{byte_size data}
+
+          #{data}
+          """
+
     TCP.send(socket, response)
     TCP.close(socket)
   end
   
-  @doc "Create a `Request` record from the socket's recieved data"
-  def get_request_data(socket) do
-    get_request_data(socket, Request.new())
-  end
-  
-  def get_request_data(socket, data) do
-    # Recieve the data
-    case TCP.recv(socket, 0) do
-      # Inital request data
-      { :ok, { :http_request, method, { :abs_path, uri }, _version }} ->
-        # Get uri parts
-        uri_elements = URI.parse iolist_to_binary(uri)
-        
-        # Build up the record
-        data = data.uri uri
-        data = data.method method
-        data = data.path String.split(String.lstrip(uri_elements.path, ?/), "/")
-        data = data.params URI.decode_query(uri_elements.query || "")
-        
-        # Get the rest of the data
-        get_request_data(socket, data)
-      
-      # Header data
-      { :ok, { :http_header, _, name, _, value }} ->
-        # Make sure header is a consistant format
-        key = case name do
-          name when is_atom(name) -> atom_to_binary name, :utf8
-          name when is_list(name) -> list_to_binary name
-        end
-        # Add the header to the request record
-        data = data.headers Dict.put(data.headers, key, iolist_to_binary(value))
-        # Get the rest of the data
-        get_request_data(socket, data)
-      
-      # End of headers
-      { :ok, :http_eoh } ->
-        case data.method do
-          # These methods don't have a request body
-          :GET -> data
-          :OPTION -> data
-          :DELETE -> data
-          # Presume others do
-          _ ->
-            :inet.setopts(socket, [{ :packet, :raw }])
-            data.body TCP.recv(socket, 0)
-        end
-      
-      # Something went wrong :/
-      _ -> data
-    end
-  end
-  
-  @doc "Gets the MIME type for a file extension"
-  def get_mime_type(extension) do
-    MimeTypes.from_extension extension
-  end
-  
-  @doc "Generate the correct headers for a html response"
-  def generate_response(html) do
-    generate_response(html, "text/html")
-  end
-  
-  @doc "Generate the correct headers for sepecified mime type"
-  def generate_response(data, mime_type) when is_binary(mime_type) do
-    """
-    HTTP/1.1 200 OK
-    Host: localhost
-    Content-Type: #{mime_type}
-    Content-Length: #{byte_size data}
-    
-    #{data}
-    """
-  end
-  
-  @doc "Generate a response for an error code"
-  def generate_error({ :error, error_code }) do
-    error_type = case error_code do
-      400 -> "400 Bad Request"
-      404 -> "404 Not Found"
-      _ -> "503 Internal Server Error"
-    end
-    
-    """
-    HTTP/1.1 #{error_type}
-    
-    #{error_type}
-    """
-  end
-  
-  @doc "Inject the required functions into the module using this"
-  defmacro __using__(opts) do
-    root_val = Keyword.get(opts, :root, ".")
-    
-    quote do
-      import HttpServer, only: [all: 1, all: 2,
-                                get: 2,
-                                post: 2,
-                                get_mime_type: 1]
-  
-      def start do
-        start(8080)
-      end
-      
-      def start(port) do
-        HttpServer.start unquote(__CALLER__.module), port
-      end
-      
-      defp static_root, do: unquote(root_val)
-      
-      def route(:GET, ["public" | path], _request) do
-        full_path = Path.join([static_root()] ++ path)
-        case File.read(full_path) do
-          { :ok, data } ->
-            mime_type = get_mime_type Path.extname(full_path)
-            { :ok, data, mime_type }
-          e ->
-            IO.inspect e
-            { :error, 404 }
-        end
-      end
-    end
-  end
-  
-  @doc "Respond to all requests"
-  defmacro all([do: code]) do
-    quote hygiene: false do
-      def route(_, _, request) do
-        unquote(code)
-      end
-    end
-  end
-  
-  @doc "Respond to all methods on a particular path"
-  defmacro all(path, [do: code]) do
-    quote hygiene: false do
-      def route(_, unquote(path), request) do
-        unquote(code)
-      end
-    end
-  end
-  
-  @doc "Respond to GET requests on the path"
-  defmacro get(path, [do: code]) do
-    quote hygiene: false do
-      def route(:GET, unquote(path), request) do
-        unquote(code)
-      end
-    end
-  end
-  
-  @doc "Respond to POST requests on the path"
-  defmacro post(path, [do: code]) do
-    quote hygiene: false do
-      def route(:POST, unquote(path), request) do
-        unquote(code)
-      end
-    end
-  end
 end

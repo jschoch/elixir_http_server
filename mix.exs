@@ -9,6 +9,7 @@ defmodule HttpServer.Mixfile do
 
   # Configuration for the OTP application
   def application do
+    #[:http_server]
     []
   end
 
