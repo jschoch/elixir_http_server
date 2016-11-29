@@ -1,15 +1,36 @@
 defmodule HttpServer do
-  @moduledoc """
+ 
+  use Application
+
+  def start(_type, _args) do
+    import Supervisor.Spec, warn: false
+
+    # Define workers and child supervisors to be supervised
+    children = [
+      # Starts a worker by calling: TestSup.Worker.start_link(arg1, arg2, arg3)
+      # worker(TestSup.Worker, [arg1, arg2, arg3]),
+      worker(HttpServer.Worker,[HttpServer.Worker])
+    ]
+
+    # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
+    # for other strategies and supported options
+    opts = [strategy: :one_for_one, name: HttpServer.Supervisor]
+    Supervisor.start_link(children, opts)
+  end
+end
+defmodule HttpServer.Worker do
+   @moduledoc """
   A very basic HTTP server using erlang's gen_tcp. Include this
   module and define route functions to respond to requests.
   """
   
   alias :gen_tcp, as: TCP
   
-  
   @doc "Start the web server with the default port (8080)."
-  def start(caller) do
-    start(caller, 8086)
+  def start_link(state,opts \\[]) do
+    #start(caller, 8086)
+    pid = start(0,8086)
+    {:ok,pid}
   end
   
   @doc "Start the server with the specified port."

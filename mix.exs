@@ -4,13 +4,16 @@ defmodule HttpServer.Mixfile do
   def project do
     [ app: :http_server,
       version: "0.0.1",
-      deps: deps ]
+      elixir: "~> 1.3",
+      build_embedded: Mix.env == :prod,
+      start_permanent: Mix.env == :prod,
+      deps: deps()]
   end
 
   # Configuration for the OTP application
   def application do
-    #[:http_server]
-    []
+    [applications: [:logger],
+    mod: {HttpServer,[node]}]
   end
 
   # Returns the list of dependencies in the format:
